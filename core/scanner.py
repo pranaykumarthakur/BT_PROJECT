@@ -2,21 +2,25 @@ import asyncio
 from bleak import BleakScanner
 
 async def get_devices():
-    print("[*] Scanning for nearby BLE devices...")
-    # This finds all discoverable BLE devices
-    devices = await BleakScanner.discover()
+    print("[*] Scanning for nearby BLE devices (High Precision)...")
     
-    if not devices:
-        print("[-] No devices found. Make sure your target is in pairing mode.")
+    # return_adv=True gives us a dictionary containing both the Device and its Signal data
+    devices_dict = await BleakScanner.discover(return_adv=True)
+    
+    if not devices_dict:
+        print("[-] No devices found. Ensure Bluetooth is enabled.")
         return []
 
     found_list = []
-    for d in devices:
-        # Check if the device has a name to avoid listing 'Unknown' ghosts
-        if d.name: 
-            found_list.append(d)
-            # FIX: Access RSSI through the metadata dictionary safely
-            rssi = d.metadata.get('rssi', 'N/A')
-            print(f"Found: {d.name} | MAC: {d.address} | Strength: {rssi}dBm")
+    
+    # In this mode, we iterate through the dictionary
+    for address, (device, adv_data) in devices_dict.items():
+        if device.name:  # We only care about named devices
+            found_list.append(device)
+            
+            # The RSSI is now stored inside adv_data
+            rssi = adv_data.rssi if adv_data.rssi else "N/A"
+            
+            print(f"Found: {device.name} | MAC: {device.address} | Strength: {rssi}dBm")
             
     return found_list
