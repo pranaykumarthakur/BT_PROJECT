@@ -1,26 +1,24 @@
 import asyncio
 from bleak import BleakScanner
 
+# This name must be EXACTLY get_devices (all lowercase, with an underscore)
 async def get_devices():
-    print("[*] Scanning for nearby BLE devices (High Precision)...")
+    print("\n" + "="*50)
+    print("      B.TFORMER: DISCOVERY MODE")
+    print("="*50)
+    print("[*] Scanning for signals...")
     
-    # return_adv=True gives us a dictionary containing both the Device and its Signal data
-    devices_dict = await BleakScanner.discover(return_adv=True)
-    
-    if not devices_dict:
-        print("[-] No devices found. Ensure Bluetooth is enabled.")
-        return []
+    try:
+        devices_dict = await BleakScanner.discover(timeout=10.0, return_adv=True)
+        if not devices_dict:
+            print("[-] No devices found.")
+            return []
 
-    found_list = []
-    
-    # In this mode, we iterate through the dictionary
-    for address, (device, adv_data) in devices_dict.items():
-        if device.name:  # We only care about named devices
-            found_list.append(device)
+        for address, (device, adv_data) in devices_dict.items():
+            name = device.name if device.name else "Unknown Device"
+            print(f"Found: {name} | MAC: {address} | {adv_data.rssi}dBm")
             
-            # The RSSI is now stored inside adv_data
-            rssi = adv_data.rssi if adv_data.rssi else "N/A"
-            
-            print(f"Found: {device.name} | MAC: {device.address} | Strength: {rssi}dBm")
-            
-    return found_list
+        return devices_dict
+    except Exception as e:
+        print(f"Error: {e}")
+        return []

@@ -1,29 +1,20 @@
 import asyncio
 import os
-from core.scanner import get_devices
+# This must match the name in scanner.py
+from core.scanner import get_devices 
 from core.disruptor import start_protocol_interference
 
 async def menu():
-    os.system('cls' if os.name == 'nt' else 'clear')
-    print("=== B.TFORMER SECURITY SYSTEM ===")
-    print("[1] Scan for Targets")
-    print("[2] Start Strategy A (GATT Flood)")
-    print("[3] Exit")
-    
-    choice = input("\nSelect Option: ")
+    print("\n[1] Scan")
+    print("[2] Disrupt")
+    choice = input("Select: ")
     
     if choice == '1':
-        await get_devices()
-        input("\nPress Enter to return to menu...")
-        await menu()
+        # Must use the underscore here too
+        await get_devices() 
     elif choice == '2':
-        mac = input("Enter Target MAC Address: ")
+        mac = input("Enter MAC: ")
         await start_protocol_interference(mac)
-    else:
-        print("Exiting...")
 
 if __name__ == "__main__":
-    try:
-        asyncio.run(menu())
-    except KeyboardInterrupt:
-        print("\n[!] PRO_TRON Shutting Down.")
+    asyncio.run(menu())
